@@ -203,6 +203,17 @@
 
   const shown = new Map();
 
+  // Šířku textu v em (číslice Orbitronu ~0,84 em, mezera ~0,34 em) si bere CSS,
+  // aby se číslo vždy vešlo do svého boxu.
+  function setDigits(node, value) {
+    const text = fmt(value);
+    if (node.textContent === text && node.style.getPropertyValue('--w')) return;
+    node.textContent = text;
+    let width = 0;
+    for (const ch of text) width += ch >= '0' && ch <= '9' ? 0.84 : 0.34;
+    node.style.setProperty('--w', Math.max(width, 1.7).toFixed(2));
+  }
+
   function showNumber(node, value, ms = 0) {
     const entry = shown.get(node) || { value, raf: 0 };
     cancelAnimationFrame(entry.raf);
@@ -210,14 +221,14 @@
     const from = entry.value;
     if (!ms || from === value || reducedMotion.matches) {
       entry.value = value;
-      node.textContent = fmt(value);
+      setDigits(node, value);
       return;
     }
     const t0 = performance.now();
     const step = (now) => {
       const p = Math.min(1, (now - t0) / ms);
       entry.value = p < 1 ? from + (value - from) * (1 - Math.pow(1 - p, 3)) : value;
-      node.textContent = fmt(entry.value);
+      setDigits(node, entry.value);
       if (p < 1) entry.raf = requestAnimationFrame(step);
     };
     entry.raf = requestAnimationFrame(step);
